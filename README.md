@@ -1,6 +1,6 @@
 # MAISON L'ACIER — Shop-Vorschau
 
-Eine mobile-first, deutschsprachige Storefront für die erste Cuff-Kollektion. Als statische Website gebaut: kein Build-Schritt und keine Laufzeit-Abhängigkeiten. Das Produktfoto stammt aus dem vom Auftraggeber bereitgestellten Instagram-Screenshot und wurde für die Vorschau zugeschnitten.
+Eine mobile-first, deutschsprachige Storefront für die erste Cuff-Kollektion. Als statische Website gebaut: kein Build-Schritt und keine Laufzeit-Abhängigkeiten. Produktfotos: polierte Cuffs aus den bereitgestellten Studioaufnahmen; Frosting- und Gravur-Varianten sind abgeleitete Produktbilder (matte Oberfläche bzw. Beispielgravur „MAISON“).
 
 ## Lokal starten
 
