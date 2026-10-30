@@ -323,7 +323,14 @@
       .hero-copy{padding:12px 0 0}
     }
     @media(prefers-reduced-motion:reduce){.hero-art img[data-hero-cuff]{will-change:auto}}
-</style>
+    /* Full-bleed color bridge from the hero portal into the collection. */
+    html,body{overflow-x:clip}
+    .hero{position:relative;isolation:isolate}
+    .hero::before{content:"";position:absolute;z-index:-1;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);background:linear-gradient(180deg,#fff 0%,#fff 24%,#f2f5fc 100%);pointer-events:none}
+    .hero-art{overflow:visible}
+    .hero-art img[data-hero-cuff]{transform-origin:50% 50%;will-change:transform,opacity}
+    #shop{position:relative;background:#f2f5fc}
+    </style>
 </head>
 <body x-data="{}">
   <div class="announcement">Handgefertigt <span aria-hidden="true">·</span> Frosting auf Anfrage <span aria-hidden="true">·</span> Versand DE / AT / CH</div>
@@ -466,20 +473,23 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    gsap.to("#hero-cuff", {
+    // Erstelle eine Scroll-Timeline für die perfekte Überleitung
+    const tl = gsap.timeline({
       scrollTrigger: {
-        trigger: "#hero-cuff",
-        start: "top top",
-        endTrigger: "#shop",
-        end: "top 32%",
-        scrub: 1,
-        markers: false,
-        invalidateOnRefresh: true
-      },
-      rotation: 180,
-      scale: 1.08,
-      transformOrigin: "50% 50%",
-      ease: "none"
+        trigger: "#hero-cuff",       // Startet in der Hero-Sektion
+        start: "top center",         // Sobald das Bild die Mitte erreicht
+        end: "bottom top",           // Endet, wenn die Kollektion 01 beginnt
+        scrub: 1.5,                  // Ultra-smoothes Nachziehen der Bewegung
+        pin: false                   // Kein starres Festkleben, flüssiger Übergang
+      }
+    });
+
+    tl.to("#hero-cuff", {
+      rotation: 220,                 // Elegante, dynamische Teildrehung
+      scale: 3.5,                    // Massiver Zoom-In, der das Bild extrem vergrößert
+      y: "15vh",                     // Bewegt das Bild aktiv nach unten in die nächste Sektion hinein
+      opacity: 0,                    // Blendet am tiefsten Punkt des Zooms perfekt aus
+      ease: "power2.inOut"
     });
   });
 </script>
