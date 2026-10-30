@@ -462,23 +462,23 @@
   </script>
   <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // Endlose, elegante Drehung (360 Grad)
-    gsap.to("#hero-cuff", {
-      rotation: 360,
-      duration: 20,
-      ease: "none",
-      repeat: -1
-    });
+    // Registriere das ScrollTrigger Plugin
+    gsap.registerPlugin(ScrollTrigger);
 
-    // Kontinuierliches Pulsieren (Zoom-In und Zoom-Out)
+    // Koppel die Drehung und den Zoom direkt an das Scrollen
     gsap.to("#hero-cuff", {
-      scale: 1.08,
-      duration: 3,
-      yoyo: true,
-      repeat: -1,
-      ease: "power1.inOut"
+      scrollTrigger: {
+        trigger: "#hero-cuff",       // Animation startet, sobald das Bild im Fokus ist
+        start: "top center",         // Startpunkt
+        end: "bottom top",           // Endpunkt (Überleitung zur Kollektion)
+        scrub: 1,                    // 1 Sekunde smoothe Verzögerung beim Nachziehen der Bewegung
+        markers: false               // Keine Entwickler-Hilfslinien anzeigen
+      },
+      rotation: 180,                 // Dreht sich beim Herunterscrollen elegant um 180 Grad
+      scale: 1.3,                    // Zoomt flüssig um 30% heran für den Fokus-Effekt
+      ease: "power1.out"
     });
   });
-  </script>
+</script>
 </body>
 </html>
