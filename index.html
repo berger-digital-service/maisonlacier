@@ -342,7 +342,7 @@
     <section class="hero wrap" aria-labelledby="heroTitle">
       <div class="hero-layout">
         <div class="hero-copy"><p class="eyebrow">Handgefertigter Schmuck · Edelstahl 316L</p><h1 id="heroTitle">Cuffs aus<br><em>Edelstahl.</em></h1><p class="hero-lede">Handgefertigte Cuffs aus Edelstahl 316L. Poliert oder auf Anfrage mit matter Frosting-Oberfläche.</p><a class="button" href="#shop">Kollektion ansehen <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
-        <div class="hero-art"><img id="hero-cuff" data-hero-cuff class="mx-auto block w-full max-w-[280px] md:max-w-[450px] object-contain relative z-10" src="assets/cuff-hero-cutout.png" alt="Freigestellter, handgefertigter Edelstahl-Cuff aus Silber" fetchpriority="high" decoding="async"></div>
+        <div class="hero-art"><img id="hero-cuff" data-hero-cuff class="mx-auto block w-full max-w-[280px] md:max-w-[450px] object-contain relative z-10" src="assets/cuff-hero-cutout.png" alt="Freigestellter, handgefertigter Edelstahl-Cuff aus Silber" width="1332" height="681" fetchpriority="high" decoding="async"></div>
       </div>
       <div class="trustbar" aria-label="Produktmerkmale"><div><span aria-hidden="true"></span> Edelstahl 316L</div><div><span aria-hidden="true"></span> Wasserfest und langlebig</div><div><span aria-hidden="true"></span> Von Hand gefertigt</div></div>
     </section>
@@ -462,21 +462,24 @@
   </script>
   <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // Registriere das ScrollTrigger Plugin
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
     gsap.registerPlugin(ScrollTrigger);
 
-    // Koppel die Drehung und den Zoom direkt an das Scrollen
     gsap.to("#hero-cuff", {
       scrollTrigger: {
-        trigger: "#hero-cuff",       // Animation startet, sobald das Bild im Fokus ist
-        start: "top center",         // Startpunkt
-        end: "bottom top",           // Endpunkt (Überleitung zur Kollektion)
-        scrub: 1,                    // 1 Sekunde smoothe Verzögerung beim Nachziehen der Bewegung
-        markers: false               // Keine Entwickler-Hilfslinien anzeigen
+        trigger: "#hero-cuff",
+        start: "top top",
+        endTrigger: "#shop",
+        end: "top 32%",
+        scrub: 1,
+        markers: false,
+        invalidateOnRefresh: true
       },
-      rotation: 180,                 // Dreht sich beim Herunterscrollen elegant um 180 Grad
-      scale: 1.3,                    // Zoomt flüssig um 30% heran für den Fokus-Effekt
-      ease: "power1.out"
+      rotation: 180,
+      scale: 1.08,
+      transformOrigin: "50% 50%",
+      ease: "none"
     });
   });
 </script>
