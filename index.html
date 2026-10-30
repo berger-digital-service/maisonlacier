@@ -313,7 +313,7 @@
     .hero-layout{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);align-items:center;gap:clamp(28px,5vw,76px);min-height:0}
     .hero-copy{position:relative;z-index:1;width:100%;padding:42px 0}
     .hero-art{position:relative;isolation:isolate;display:grid;place-items:center;width:100%;max-width:760px;height:auto;min-height:0;aspect-ratio:1.9;margin:0 auto;overflow:visible;border:0;border-radius:0;background:transparent}
-    .hero-art:before{content:"";position:absolute;z-index:-1;inset:9% 5%;background:radial-gradient(ellipse at center,rgba(222,233,252,.78) 0%,rgba(242,247,255,.42) 55%,transparent 79%);filter:blur(18px);pointer-events:none}
+    .hero-art:before{display:none}.portal-glow{position:absolute;z-index:0;width:82%;aspect-ratio:1.9;border-radius:50%;background:radial-gradient(ellipse at center,rgba(174,195,239,.58) 0%,rgba(222,233,252,.48) 42%,rgba(242,247,255,.18) 70%,transparent 100%);filter:blur(18px);pointer-events:none;will-change:transform,opacity}
     .hero-art:after{display:none}
     .hero-art img[data-hero-cuff]{position:relative;inset:auto;width:100%;height:auto;max-height:none;object-fit:contain;object-position:center;padding:0;filter:drop-shadow(0 20px 22px rgba(23,36,93,.12));transform-origin:center center;will-change:transform}
     @media(max-width:900px){.hero-layout{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(16px,3vw,32px)}.hero-art{aspect-ratio:1.8}}
@@ -325,11 +325,11 @@
     @media(prefers-reduced-motion:reduce){.hero-art img[data-hero-cuff]{will-change:auto}}
     /* Full-bleed color bridge from the hero portal into the collection. */
     html,body{overflow-x:clip}
-    .hero{position:relative;isolation:isolate}
+    .hero{position:relative;isolation:isolate;z-index:2}
     .hero::before{content:"";position:absolute;z-index:-1;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);background:linear-gradient(180deg,#fff 0%,#fff 24%,#f2f5fc 100%);pointer-events:none}
     .hero-art{overflow:visible}
     .hero-art img[data-hero-cuff]{transform-origin:50% 50%;will-change:transform,opacity}
-    #shop{position:relative;background:#f2f5fc}
+    #shop{position:relative;z-index:1;background:#f2f5fc}
     </style>
 </head>
 <body x-data="{}">
@@ -349,7 +349,7 @@
     <section class="hero wrap" aria-labelledby="heroTitle">
       <div class="hero-layout">
         <div class="hero-copy"><p class="eyebrow">Handgefertigter Schmuck · Edelstahl 316L</p><h1 id="heroTitle">Cuffs aus<br><em>Edelstahl.</em></h1><p class="hero-lede">Handgefertigte Cuffs aus Edelstahl 316L. Poliert oder auf Anfrage mit matter Frosting-Oberfläche.</p><a class="button" href="#shop">Kollektion ansehen <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
-        <div class="hero-art"><img id="hero-cuff" data-hero-cuff class="mx-auto block w-full max-w-[280px] md:max-w-[450px] object-contain relative z-10" src="assets/cuff-hero-cutout.png" alt="Freigestellter, handgefertigter Edelstahl-Cuff aus Silber" width="1332" height="681" fetchpriority="high" decoding="async"></div>
+        <div class="hero-art"><span class="portal-glow" aria-hidden="true"></span><img id="hero-cuff" data-hero-cuff class="mx-auto block w-full max-w-[280px] md:max-w-[450px] object-contain relative z-10" src="assets/cuff-hero-cutout.png" alt="Freigestellter, handgefertigter Edelstahl-Cuff aus Silber" width="1332" height="681" fetchpriority="high" decoding="async"></div>
       </div>
       <div class="trustbar" aria-label="Produktmerkmale"><div><span aria-hidden="true"></span> Edelstahl 316L</div><div><span aria-hidden="true"></span> Wasserfest und langlebig</div><div><span aria-hidden="true"></span> Von Hand gefertigt</div></div>
     </section>
@@ -473,24 +473,58 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // Erstelle eine Scroll-Timeline für die perfekte Überleitung
+    const cuff = document.querySelector("#hero-cuff");
+    const stage = cuff?.closest(".hero-art");
+    const glow = stage?.querySelector(".portal-glow");
+    const collection = document.querySelector("#shop");
+    if (!cuff || !stage || !glow || !collection) return;
+
+    // Start slightly smaller and tilted; on desktop the portal travels to screen center.
+    const desktop = window.matchMedia("(min-width: 681px)");
+    gsap.set(cuff, {
+      x: 0,
+      y: 12,
+      rotation: -10,
+      scale: 0.9,
+      opacity: 1,
+      transformOrigin: "50% 50%"
+    });
+
+    const portalX = () => {
+      if (!desktop.matches) return 0;
+      const box = stage.getBoundingClientRect();
+      return window.innerWidth / 2 - (box.left + box.width / 2);
+    };
+
     const tl = gsap.timeline({
       scrollTrigger: {
-        trigger: "#hero-cuff",       // Startet in der Hero-Sektion
-        start: "top center",         // Sobald das Bild die Mitte erreicht
-        end: "bottom top",           // Endet, wenn die Kollektion 01 beginnt
-        scrub: 1.5,                  // Ultra-smoothes Nachziehen der Bewegung
-        pin: false                   // Kein starres Festkleben, flüssiger Übergang
+        trigger: ".hero",
+        start: "top top",
+        endTrigger: "#shop",
+        end: "top 38%",
+        scrub: 1.5,
+        pin: false,
+        markers: false,
+        invalidateOnRefresh: true
       }
     });
 
-    tl.to("#hero-cuff", {
-      rotation: 220,                 // Elegante, dynamische Teildrehung
-      scale: 3.5,                    // Massiver Zoom-In, der das Bild extrem vergrößert
-      y: "15vh",                     // Bewegt das Bild aktiv nach unten in die nächste Sektion hinein
-      opacity: 0,                    // Blendet am tiefsten Punkt des Zooms perfekt aus
+    tl.to(glow, {
+      x: portalX,
+      y: "15vh",
+      scale: 3.5,
+      opacity: 0,
       ease: "power2.inOut"
-    });
+    }, 0);
+
+    tl.to(cuff, {
+      x: portalX,
+      rotation: 220,
+      scale: 3.5,
+      y: "15vh",
+      opacity: 0,
+      ease: "power2.inOut"
+    }, 0);
   });
 </script>
 </body>
