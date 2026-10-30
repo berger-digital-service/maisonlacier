@@ -1,47 +1,56 @@
-# MAISON L'ACIER — Shop-Vorschau
+# MAISON L'ACIER
 
-Eine mobile-first, deutschsprachige Storefront für die erste Cuff-Kollektion. Als statische Website gebaut: kein Build-Schritt und keine Laufzeit-Abhängigkeiten. Produktfotos: polierte Cuffs aus den bereitgestellten Studioaufnahmen; Frosting- und Gravur-Varianten sind abgeleitete Produktbilder (matte Oberfläche bzw. Beispielgravur „MAISON“).
+Statischer Storefront mit Vercel Functions, Supabase Postgres als Datenbank, Stripe Checkout und optional Resend für E-Mails.
+
+## Backend-Funktionen
+
+- Produktpreise und Größenbestand werden aus Supabase geladen. Der Browserpreis wird beim Bestellen ignoriert.
+- Die Kasse legt die Bestellung atomar an und reserviert Lagerbestand. Sie leitet anschließend zu Stripe Checkout weiter.
+- Die Stripe-Webhooks prüfen die Signatur, verarbeiten wiederholte Ereignisse sicher, bestätigen Zahlungen und geben Lager bei abgebrochenen/abgelaufenen Sitzungen frei.
+- Bestellbestätigungen werden über eine Datenbank-Outbox versendet und bei temporären E-Mail-Fehlern erneut versucht.
+- Sonderwünsche, Double-Opt-in-Newsletter und Abmeldungen werden gespeichert. Öffentliche Rollen haben keinen direkten Datenbankzugriff.
+- `/admin.html` ist ein Supabase-Auth-geschütztes Verwaltungs-Panel für Produkte, Preise, Bestand, Versandpreise, Bestellungen und Anfragen.
+- Rate Limits für öffentliche Endpunkte werden in Supabase nachverfolgt.
+
+## Einrichten
+
+1. Supabase-Projekt anlegen und die Datei `supabase/migrations/20261030094151_store_backend.sql` im Supabase Dashboard unter **SQL Editor** ausführen. Alternativ das Projekt mit `npx supabase link --project-ref DEIN_PROJECT_REF` verbinden und `npx supabase db push` ausführen. Die Migration aktiviert Row Level Security auf allen Shop-Tabellen und sperrt den direkten Zugriff für `anon` und `authenticated`.
+2. In der `shipping_rates`-Tabelle die bestätigten Versandpreise für `DE`, `AT` und `CH` in Cent eintragen. Ohne eingerichteten Tarif lässt der Server für dieses Land keine Bestellung zu. Beispiel für 4,90 €: `price_cents = 490`.
+3. Supabase **Authentication** so konfigurieren, dass Admin-Konten nicht öffentlich registriert werden können. Einen vertrauenswürdigen Admin-Nutzer im Dashboard anlegen und dessen UUID eintragen:
+
+   ```sql
+   insert into public.admin_users (user_id)
+   values ('UUID-DES-ADMIN-AUTH-BENUTZERS');
+   ```
+
+4. In Stripe einen Webhook auf `https://DEINE-DOMAIN/api/stripe-webhook` anlegen und folgende Events aktivieren: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` und `checkout.session.expired`.
+5. Die Umgebungsvariablen lokal aus `.env.example` übernehmen und die echten Werte nur lokal bzw. in Vercel setzen. Supabase Secret Key und Stripe Secret/Webhook Keys niemals in HTML, Repository oder Browser-Code hinterlegen.
+6. Das Git-Repository mit Vercel verbinden. Das Projekt braucht keinen Build-Schritt; Output Directory ist `.`. Für die Vorschau `STORE_ENABLED=false` verwenden. Erst wenn Steuern, Versand, Preisangaben und Rechtstexte geklärt und geprüft sind, kann `STORE_ENABLED=true` den Checkout freischalten.
+
+### Vercel-Umgebungsvariablen
+
+| Variable | Zweck |
+| --- | --- |
+| `SUPABASE_URL` | URL des Supabase-Projekts |
+| `SUPABASE_PUBLISHABLE_KEY` | Öffentlicher Schlüssel für die Anmeldung im Admin-Panel |
+| `SUPABASE_SECRET_KEY` | Geheimer Supabase-Schlüssel, nur für Vercel Functions |
+| `STRIPE_SECRET_KEY` | Stripe Test- oder Live-Schlüssel |
+| `STRIPE_WEBHOOK_SECRET` | Signaturgeheimnis des Stripe-Endpunkts |
+| `SITE_URL` | Öffentliche Domain mit HTTPS, zum Beispiel `https://maisonlacier.de` |
+| `STORE_ENABLED` | `false` hält die Kasse geschlossen; `true` aktiviert sie |
+| `RATE_LIMIT_SALT` | Langer zufälliger Wert zum Hashen von IP-Adressen |
+| `RESEND_API_KEY` | API-Schlüssel für Bestell- und Bestätigungs-E-Mails |
+| `EMAIL_FROM` | Verifizierter Absender in Resend, zum Beispiel `MAISON L'ACIER <shop@maisonlacier.de>` |
+| `ADMIN_NOTIFICATION_EMAIL` | Optional: Adresse für neue Sonderwünsche |
+
+`api/` enthält die Vercel Functions. `api/_lib/` enthält gemeinsame serverseitige Helfer. `/admin.html` verwendet ein existierendes Supabase-Auth-Konto; der Datenzugriff wird zusätzlich über `admin_users` geprüft.
+
+## Datenschutz und Verkaufsfreigabe
+
+Der Checkout ist nach Deployment zunächst absichtlich deaktiviert. In der Datenbank sind derzeit Beispielpreise und Beispielbestände aus der Vorschauseite hinterlegt; sie müssen mit dem realen Angebot abgeglichen werden. Versandpreise sind nicht voreingetragen. Steuerbehandlung, Versandregeln, Lieferzeiten, Betreiberangaben sowie Rechtstexte sind noch nicht festgelegt. Vor `STORE_ENABLED=true` müssen diese Angaben vervollständigt, fachlich geprüft und die Datenschutzhinweise auf Supabase, Vercel, Stripe und Resend abgestimmt werden.
+
+Der Warenkorb und die Merkliste bleiben im Browser gespeichert. Bestell-, Anfrage- und Newsletter-Daten werden in Supabase gespeichert. Newsletter-Anmeldungen werden erst nach Bestätigung aktiviert; der Abmeldelink fordert eine zusätzliche Bestätigung an, damit E-Mail-Scanner nicht versehentlich abmelden. Es sind keine Werbe- oder Analyse-Tracker durch das neue Backend eingebunden.
 
 ## Lokal starten
 
-- `index.html` im Browser öffnen (für lokale Funktionen/Dateien vorzugsweise über einen lokalen Webserver).
-- Ohne Installationen z. B. `python3 -m http.server 8000` im Projektordner ausführen und `http://localhost:8000` öffnen.
-- Produkte, Preise, Größenbestände und Produkttexte stehen im `products`-Array am Anfang des `<script>`-Blocks in `index.html`.
-
-## Deployment
-
-**Netlify:** Projektordner als statische Site deployen; Publish-Verzeichnis `.`.  
-**Vercel:** „Other“ / statische Site wählen, Root Directory auf den Projektordner, Build Command leer lassen, Output Directory `.`.  
-Eigene Domain, HTTPS und korrekte Kontakt-/Canonical-Domain nach Einrichtung ergänzen.
-
-## Funktionen in dieser Vorschau
-
-- Responsive Startseite, Kollektion, Über-uns-Story, FAQ/Pflege, Newsletter- und Instagram-Sektionen.
-- Schlanke Kollektion ohne Filterleiste; Produktvarianten direkt im Produktdialog.
-- Produktdialog mit Größenwahl, Größenratgeber, Finish-Aufpreis, Gravurfeld und Bestandshinweis.
-- Warenkorb-Slide-in, Mengenänderung/Entfernen, Merkliste, Teilen, lokale Speicherung.
-- Checkout-Formular mit Länderwahl DE/AT/CH und visueller Auswahl Stripe/Karte, PayPal, Klarna, SEPA.
-- Sonderwunschformular, Newsletter-Formular, Cookie-Einwilligungsoberfläche, Rechtstext-Platzhalter.
-- Meta-/Open-Graph-Tags, Schema.org Store, Tastaturbedienbarkeit und reduzierte Bewegung.
-
-## Vor einem echten Verkaufsstart zwingend erledigen
-
-Diese Lieferung ist eine **funktionsfähige Frontend-Vorschau**, aber noch kein echter Shop-Checkout. Es werden keine Bestellungen übertragen, keine Zahlungen verarbeitet, keine E-Mails versendet, keine Lagerbestände serverseitig reserviert und keine Anfragen/Newsletter-Anmeldungen an einen Anbieter übermittelt. Cart, Wishlist und Consent liegen nur lokal im Browser. Der Checkout zeigt einen Demo-Hinweis und löst keine Zahlung aus.
-
-1. Hochauflösende, echte Produktfotos und eine echte Mehrbild-Galerie pro Produkt/Finish produzieren; das einzelne Referenzfoto in `assets/` ist nur ein Startmotiv. Zoom funktioniert in der Vorschau, weitere Kamerawinkel müssen ergänzt werden.
-2. Einen Commerce-Backend-Anbieter auswählen und anbinden (z. B. Shopify für Produkt-/Inventar-/Bestellverwaltung oder eine serverseitige Next.js-/Supabase-Architektur).
-3. Stripe/PayPal/Klarna/SEPA ausschließlich serverseitig bzw. über deren gehostete, PCI-konforme Komponenten integrieren. Keine Secret Keys in `index.html` oder Client-JavaScript ablegen. Webhooks, Idempotenz, Fehlerfälle, Steuer- und Versandberechnung ergänzen.
-4. Transaktionale Bestell- und Versand-E-Mails, Bestandsabgleich, Rückerstattungen, Konten, Rabattcodes sowie echte Bewertungen einrichten. Für Newsletter Double-Opt-in und Abmeldung konfigurieren.
-5. Verbindliche SKU-/Variantendaten und reale Produktbilder für jede Größe/Finish-Variante pflegen. Preise, Frosting-Aufpreis, Gravur, Bestand und Lieferzeiten sind Beispielwerte; vor Veröffentlichung verifizieren.
-6. Versandpauschale, Gratisversand-Schwelle, DHL-Vertrag, Länderregeln, Schweizer Zoll/Einfuhrabgaben sowie DE/AT/CH-Steuerlogik festlegen. Beispielwerte aus Oberfläche und Produktdaten ersetzen.
-7. Rechtstexte fachkundig erstellen: Impressum, Datenschutzhinweise passend zu tatsächlichen Dienstleistern, AGB, Widerrufsbelehrung und Musterformular, Versand-/Rückgabeinfos sowie den gesetzlich erforderlichen Widerrufsbutton. Die Vorschau bietet nur Platzhalter und stellt keine Rechtsberatung dar.
-8. Cookie-/Tracking-Consent an die tatsächlich eingesetzten Dienste koppeln; externe Schriftarten ggf. lokal hosten, Live-Instagram nur mit geeigneter Consent-Lösung laden. In dieser Vorschau ist kein Tracking eingebunden.
-9. Produktdaten für `Product`/`Offer`-Schema, Sitemap, robots.txt, Domain, englische Lokalisierung, echte Support-Adresse und Kontaktweg ergänzen.
-10. Tests für Checkout, Steuern, Barrierefreiheit, Datenschutz, mobile Geräte und Core Web Vitals durchführen. Das Ziel Lighthouse >90 ist eine Zielvorgabe und nicht als gemessener Wert zugesichert.
-
-## Hinweise zu Beispieldaten
-
-- Beispielpreise: 89 €, 101 € (Frosting) und 159 € (Duo).
-- Frosting-Aufpreis in der Produktauswahl: +12 €, Gravur: +10 €.
-- Lagerzahlen, Größenratgeber und Lieferzeit (3–5 Werktage) sind Demo-/Richtwerte und müssen mit dem tatsächlichen Produkt abgeglichen werden.
-- Kein Shop-Konto/Login ist eingerichtet. Das bereitgestellte Instagram-Bild belegt das Designmotiv, nicht die Produktangaben oder Verfügbarkeit.
+Vercel CLI installieren/anmelden, `.env.example` nach `.env` kopieren und lokale Zugangsdaten einsetzen. Dann `vercel dev` im Projektordner ausführen. Für echte Datenbankmigrationen kann nach Installation/Verknüpfung des Supabase CLI `supabase db push` verwendet werden; alternativ die Migration im Supabase SQL Editor ausführen.
