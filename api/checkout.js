@@ -1,4 +1,5 @@
 import { db, json, publicUrl, rateLimit, requireMethod, rpc, text, validateEmail } from './_lib/http.js';
+import { validateAddress } from './_lib/address-validation.js';
 
 function stripeForm(order, origin, customer) {
   const form = new URLSearchParams();
@@ -65,6 +66,8 @@ export default async function handler(req, res) {
       city: text(customer?.city, 100, 'Ort'),
       country: ['DE', 'AT', 'CH'].includes(customer?.country) ? customer.country : (() => { throw new Error('Lieferland wird nicht unterstützt.'); })(),
     };
+    const address = await validateAddress({ country: shipping.country, postcode: shipping.postcode, city: shipping.city });
+    if (!address.valid) throw new Error('Diese Kombination aus Postleitzahl und Ort wurde im gewählten Land nicht gefunden. Bitte prüfe deine Angaben.');
     if (!Array.isArray(items) || !items.length || items.length > 15) throw new Error('Der Warenkorb ist leer oder enthält zu viele Positionen.');
     const order = await rpc('create_store_order', {
       p_customer: shipping,

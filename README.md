@@ -9,6 +9,7 @@ Statischer Storefront mit Vercel Functions, Supabase Postgres als Datenbank, Str
 - Die Stripe-Webhooks prüfen die Signatur, verarbeiten wiederholte Ereignisse sicher, bestätigen Zahlungen und geben Lager bei abgebrochenen/abgelaufenen Sitzungen frei.
 - Bestellbestätigungen werden über eine Datenbank-Outbox versendet und bei temporären E-Mail-Fehlern erneut versucht.
 - Sonderwünsche, Double-Opt-in-Newsletter und Abmeldungen werden gespeichert. Öffentliche Rollen haben keinen direkten Datenbankzugriff.
+- Vor dem Checkout prüft die OpenPLZ API serverseitig, ob Postleitzahl und Ort im gewählten Lieferland DE, AT oder CH zusammenpassen. Bei Nichterreichbarkeit der API wird keine Bestellung angelegt.
 - `/admin.html` ist ein Supabase-Auth-geschütztes Verwaltungs-Panel für Produkte, Preise, Bestand, Versandpreise, Bestellungen und Anfragen.
 - Rate Limits für öffentliche Endpunkte werden in Supabase nachverfolgt.
 
@@ -49,7 +50,7 @@ Statischer Storefront mit Vercel Functions, Supabase Postgres als Datenbank, Str
 
 Der Checkout ist nach Deployment zunächst absichtlich deaktiviert. In der Datenbank sind derzeit Beispielpreise und Beispielbestände aus der Vorschauseite hinterlegt; sie müssen mit dem realen Angebot abgeglichen werden. Versandpreise sind nicht voreingetragen. Steuerbehandlung, Versandregeln, Lieferzeiten, Betreiberangaben sowie Rechtstexte sind noch nicht festgelegt. Vor `STORE_ENABLED=true` müssen diese Angaben vervollständigt, fachlich geprüft und die Datenschutzhinweise auf Supabase, Vercel, Stripe und Resend abgestimmt werden.
 
-Der Warenkorb und die Merkliste bleiben im Browser gespeichert. Bestell-, Anfrage- und Newsletter-Daten werden in Supabase gespeichert. Newsletter-Anmeldungen werden erst nach Bestätigung aktiviert; der Abmeldelink fordert eine zusätzliche Bestätigung an, damit E-Mail-Scanner nicht versehentlich abmelden. Es sind keine Werbe- oder Analyse-Tracker durch das neue Backend eingebunden.
+Der Warenkorb und die Merkliste bleiben im Browser gespeichert. Bestell-, Anfrage- und Newsletter-Daten werden in Supabase gespeichert. Für die Adressprüfung sendet die Vercel Function Lieferland, Postleitzahl und Ort an die OpenPLZ API. Ergänze die Datenschutzhinweise vor dem Verkaufsstart um Anbieter, Zweck, Rechtsgrundlage, Aufbewahrung und weitere erforderliche Angaben zur Nutzung dieses externen Dienstes. Newsletter-Anmeldungen werden erst nach Bestätigung aktiviert; der Abmeldelink fordert eine zusätzliche Bestätigung an, damit E-Mail-Scanner nicht versehentlich abmelden. Es sind keine Werbe- oder Analyse-Tracker durch das neue Backend eingebunden.
 
 ## Lokal starten
 
